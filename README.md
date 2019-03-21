@@ -7,14 +7,24 @@ Nautilus script, command set for Git
 
   * git
   * zenity
-
+  * nautilus
 
 ## Install
 
 * `git clone git: //github.com/webmastak/nautilus-commandsgit`
 * `cd nautilus-commandsgit`
 * `cp ~/nautilus-commandsgit/local/share/icons/git.png ~/.local/share/icons/git.png`
+
+### Nautilus script
+
 * `cp ~/nautilus-commandsgit/local/share/nautilus/scripts/CommandsGit ~/.local/share/nautilus/scripts/CommandsGit`
+* `enjoy`
+
+### Nautilus python extension 
+Adds Commands Git to the Nautilus context menu
+
+* `cp ~/nautilus-commandsgit/local/share/nautilus-python/extensions/nautilus-commandsgit.py ~/.local/share/nautilus-python/extensions/nautilus-commandsgit.py`
+* `cp ~/nautilus-commandsgit/local/bin/commands-git ~/.local/bin/commands-git`
 * `enjoy`
 
 

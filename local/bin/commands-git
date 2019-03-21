@@ -1,0 +1,286 @@
+#!/bin/bash 
+
+cd ${@%/*}
+FP=$(echo $1)
+PROGNAME=${0##*/}
+FILENAME=$(basename $1)
+PROJECT=$(basename "${@%/*}")
+OUTPUT="/tmp/$(basename "$PROGNAME").$$"
+ICON="$HOME/.local/share/icons/git.png"
+NAME="--class=$PROGNAME --name=$PROGNAME"
+TOKEN="$(git config user.token)"
+USERNAME="$(git config user.username)"
+RBRANCH="$(git branch -r | tr -d ' ')"
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+LBRANCH="$(git branch | cut -d ' ' -f2- | tr -d ' ')"
+ZENITY="zenity $NAME --list --hide-header --window-icon=$ICON --width=230 --height=230"
+ZENITY_RUN="zenity $NAME --progress --pulsate --no-cancel --auto-close --window-icon=$ICON --width=230"
+ZENITY_OUT="zenity $NAME --text-info --no-wrap --window-icon=$ICON --width=800 --height=600"
+ZENITY_INFO="zenity $NAME --info --no-wrap --window-icon=$ICON"
+ZENITY_ERROR="zenity $NAME --error --no-wrap --window-icon=$ICON"
+ZENITY_ENTRY="zenity $NAME --entry --window-icon=$ICON --width=230 --height=80"
+ZENITY_QUESTION="zenity $NAME --question --no-wrap --window-icon=$ICON --timeout=5"
+ONBRANCH=$(! [ -z $BRANCH ] && echo "On branch $BRANCH" || echo "No repository")
+
+main()
+{
+CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
+      --column="Exec" --column="Command" --height=496 \
+      "$0 $FP --init" "	init repository" \
+      "$0 $FP --commit" "	add all commit" \
+      "$0 $FP --commitf" "	add file commit" \
+      "$0 $FP --remote" "	add remote origin" \
+      "$0 $FP --push" "	push origin" \
+      "$0 $FP --pull" "	pull origin" \
+      "$0 $FP--pushf" "	push force origin" \
+      "$0 $FP --commitr" "	commit rollback" \
+      "$0 $FP --checkout" "	checkout branch" \
+      "$0 $FP --newbranch" "	create new branch" \
+      "$0 $FP --cprbranch" "	copy remote branch" \
+      "$0 $FP --dremote" "	delete remote origin" \
+      "$0 $FP --dbranch" "	delete branch" \
+      "$0 $FP --merge" "	merge branch" \
+      "$0 $FP --status" "	repository status" \
+      "$0 $FP --commitlog" "	commit log")
+exec $CMD
+}
+
+while true; do
+	case $2 in
+		--dbranch)
+			CMD=$($ZENITY --hide-column=1 --title="Delete Branch" --text="Select:" \
+				  --column="Exec" --column="Command" --height=80 \
+				  "$0 $FP --dlbranch" "	     delete local" \
+				  "$0 $FP --drbranch" "	     delete remote")
+			exec $CMD
+			;;				
+		--init) 
+			git init && git add . && git commit -m "init" | tee >$OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Repository Initialization: $PROJECT"
+			fi
+			rm -f $OUTPUT
+			exec $0 $FP --	
+			;;
+		--status) 
+			git status &>> $OUTPUT | stdbuf -oL tee >$OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Repository Status: $PROJECT"
+			fi
+			rm -f $OUTPUT
+			;;			
+		--push) 
+		    if ! [ -z $BRANCH ]; then 
+			(git push -u origin $BRANCH &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN \
+			--title="Push origin/$BRANCH"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Push origin/$BRANCH"
+			fi
+			rm -f $OUTPUT	
+			else
+			$ZENITY_ERROR --text="No repository"
+			fi
+			;;
+		--pushf) 
+		    if ! [ -z $BRANCH ]; then 
+			(git push -f origin $BRANCH &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN \
+			--title="Push Force origin/$BRANCH"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Push Force origin/$BRANCH"
+			fi
+			rm -f $OUTPUT
+			else
+			$ZENITY_ERROR --text="No repository"
+			fi				
+			;;
+		--pull) 
+			(git pull &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN --title="Pull Origin"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Pull Origin"
+			fi
+			rm -f $OUTPUT	
+			;;		
+		--commitlog) 
+			git log --all --reflog --oneline --graph --decorate &>> $OUTPUT | stdbuf -oL tee >$OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Commit Log"
+			fi
+			rm -f $OUTPUT		
+			;;	
+		--commitf) 
+		    if [ -f $FILENAME ]; then
+			git add $FILENAME && git commit -m "Update $FILENAME" | tee >$OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Commit file: $FILENAME"
+			fi
+			rm -f $OUTPUT
+			else
+			$ZENITY_ERROR --text="Select a single file and try again"
+			fi
+			;;			
+		--commit)
+			COMMIT=$($ZENITY_ENTRY --title "Add Commit" --text="Commit name:" --entry-text="Update") 
+			if [ $? -eq 0 -a -n $COMMIT ]; then
+			git add . && git commit -a -m "$COMMIT" | tee >$OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "All Commit"
+			fi
+			rm -f $OUTPUT	
+			fi
+			;;
+		--commitr)
+			NUMBER=$($ZENITY_ENTRY --title "Rollback Commits" --text="Number Commit:" --entry-text="1") 
+			if [ $? -eq 0 -a -n $NUMBER ]; then
+			git reset --hard HEAD~$NUMBER | tee >$OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Rollback Commits"
+			fi
+			rm -f $OUTPUT
+			fi
+			;;
+		--newbranch)
+			NAMEBRANCH=$($ZENITY_ENTRY --title "Create New Branch" --text="Name Branch:" --entry-text="dev") 
+			if [ $? -eq 0 -a -n $NAMEBRANCH ]; then
+			git checkout -b $NAMEBRANCH 1>> $OUTPUT 2>> $OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Create New Branch: $NAMEBRANCH"
+			fi
+			rm -f $OUTPUT
+			exec $0 $FP --
+			fi
+			;;
+		--cprbranch)			
+			LISTL=`echo "$LBRANCH" | sed 's|.*\master\(.*\)|\1|'`
+		    LISTR=`echo "$RBRANCH" | sed 's|.*\origin/\(.*\)|\1|' | sed 's|.*\master\(.*\)|\1|'`
+		    LIST=`echo -e "$LISTR\n$LISTL" | sort | uniq -u`
+		    if ! [ -z $LIST ]; then
+			NAMEBRANCH=$($ZENITY --title "Copy Remote Branch" --text="Select Branch:" \
+			            --column "Branch" $LIST)   
+			if [ $? -eq 0 -a -n $NAMEBRANCH ]; then
+		    (git checkout $NAMEBRANCH &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN \
+		    --title="Copy Remote Branch: $NAMEBRANCH"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Copy Remote Branch: $NAMEBRANCH"
+			fi
+			rm -f $OUTPUT
+			exec $0 $FP --
+			fi
+			else
+			$ZENITY_INFO --text="There is only branch origin/master"
+			fi			
+			;;						
+		--dlbranch)
+		    LIST=`echo "$LBRANCH" | sed 's|.*\master\(.*\)|\1|'`
+		    if ! [ -z $LIST ]; then
+			NAMEBRANCH=$($ZENITY --title "Delete Local Branch" --text="Select Branch:" \
+				        --column "Branch" --multiple --separator="#" $LIST)   
+			if [ $? -eq 0 -a -n $NAMEBRANCH ]; then
+			LIST_BRANCH=`echo "$NAMEBRANCH" | tr '#' ' '`
+			git branch -d $LIST_BRANCH 1>> $OUTPUT 2>> $OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Delete Local Branch: $LIST_BRANCH"
+			fi
+			rm -f $OUTPUT
+			fi
+			else
+			$ZENITY_INFO --text="There is only branch master"
+			fi
+			;;	
+		--drbranch)
+		    LIST=`echo "$RBRANCH" | sed 's|.*\origin/\(.*\)|\1|' | sed 's|.*\master\(.*\)|\1|'`
+		    if ! [ -z $LIST ]; then
+			NAMEBRANCH=$($ZENITY --title "Delete Origin Branch" --text="Select Branch:" \
+				        --column "Branch" --multiple --separator="#" $LIST)   
+			if [ $? -eq 0 -a -n $NAMEBRANCH ]; then
+			LIST_BRANCH=`echo "$NAMEBRANCH" | tr '#' ' '`
+		    (git push origin --delete $LIST_BRANCH &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN \
+		    --title="Delete Origin Branch"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Delete Origin Branch: $LIST_BRANCH"
+			fi
+			rm -f $OUTPUT
+			fi
+			else
+			$ZENITY_INFO --text="There is only branch origin/master"
+			fi
+			;;				
+		--checkout)
+		    if [ $(echo "$LBRANCH" | wc -l) -ne 1 ]; then
+			NAMEBRANCH=$($ZENITY --title "Checkout Branch" --text="Select Branch:" \
+				        --column "Branch" $LBRANCH)   
+			if [ $? -eq 0 -a -n $NAMEBRANCH ]; then
+			git checkout $NAMEBRANCH 1>> $OUTPUT 2>> $OUTPUT
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Checkout Branch: $NAMEBRANCH"
+			fi
+			rm -f $OUTPUT
+			exec $0 $FP --
+			fi
+			else
+			$ZENITY_INFO --text="There is only branch master"
+			fi			
+			;;	
+		--merge)
+		    LIST=`echo "$LBRANCH" | sed 's|.*\master\(.*\)|\1|'`
+		    if ! [ -z $LIST ]; then
+			NAMEBRANCH=$($ZENITY --title "Merge Branch" --text="Select Branch:" \
+				        --column "Branch" $LIST)   
+			if [ $? -eq 0 -a -n $NAMEBRANCH ]; then
+			(git merge $NAMEBRANCH &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN \
+		    --title="Merge Branch: $NAMEBRANCH"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_OUT --filename=$OUTPUT --title "Merge Branch: $NAMEBRANCH"
+			fi
+			rm -f $OUTPUT
+			fi
+			else
+			$ZENITY_INFO --text="There is only branch master"
+			fi
+			;;													
+		--remote)
+			DESC_PROJECT=$($ZENITY_ENTRY --title "Add Remote Origin: $PROJECT" --text="Description Project:" \
+				          --width=450 --entry-text="") 
+		    CMD="curl -H \"Authorization: token $TOKEN\" https://api.github.com/user/repos -d \
+		    '{\"name\":\"$PROJECT\",\"description\":\"$DESC_PROJECT\"}'"		   
+			if [ $? -eq 0 -a -n $PROJECT ]; then
+			(eval $CMD && git remote add origin git@github.com:$USERNAME/$PROJECT.git &>> $OUTPUT \
+			| stdbuf -oL tee >$OUTPUT) | $ZENITY_RUN --title="Add Remote Origin"
+			if ! [ -s $OUTPUT ]; then 
+			$ZENITY_INFO --text="Remote Origin \"$PROJECT\" is added"
+			else
+			$ZENITY_OUT --filename=$OUTPUT --title "Remote Add Origin: $PROJECT"
+			fi
+			rm -f $OUTPUT
+			fi
+			;;
+		--dremote)
+			if ! [ -z $(git remote) ]; then
+			if [ $? -eq 0 -a -n $PROJECT ]; then
+			$ZENITY_QUESTION --title="Delete Remote Origin" --text="Want delete remote origin?"
+            if [ $? -eq 0 ]; then
+			(curl -X DELETE -H "Authorization: token $TOKEN" \
+			https://api.github.com/repos/$USERNAME/$PROJECT &>> $OUTPUT | stdbuf -oL tee >$OUTPUT) \
+			| $ZENITY_RUN --title="Delete Remote Origin"
+			if [ -s $OUTPUT ]; then 
+			$ZENITY_INFO --text="Remote Origin \"$PROJECT\" is deleted"
+			fi
+			rm -f $OUTPUT
+			fi
+			fi
+			else
+			$ZENITY_ERROR --text="No remote repository"
+			fi
+			;;				
+		--)
+			shift
+			break
+			;;									
+		*)  
+			shift
+			break
+			;;		 
+	esac
+	shift
+done
+
+main
