@@ -16,7 +16,7 @@ ZENITY_OUT="zenity $NAME --text-info --no-wrap --window-icon=$ICON --width=800 -
 ZENITY_INFO="zenity $NAME --info --no-wrap --window-icon=$ICON"
 ZENITY_ERROR="zenity $NAME --error --no-wrap --window-icon=$ICON"
 ZENITY_ENTRY="zenity $NAME --entry --window-icon=$ICON --width=230 --height=80"
-ZENITY_QUESTION="zenity $NAME --question --no-wrap --window-icon=$ICON --timeout=5"
+ZENITY_QUESTION="zenity $NAME --question --no-wrap --window-icon=$ICON --timeout=5" #--cancel-label=Cancel --ok-label=OK
 ONBRANCH=$(! [ -z $BRANCH ] && echo "On branch $BRANCH" || echo "No repository")
 FILENAME=$(basename "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS")
 
