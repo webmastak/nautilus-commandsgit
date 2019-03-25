@@ -25,7 +25,7 @@ ONBRANCH=$(! [ -z $BRANCH ] && echo "On branch $BRANCH" || echo "No repository")
 main()
 {
 CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
-      --column="Exec" --column="Command" --height=496 \
+      --column="Exec" --column="Command" --height=522 \
       "$0 $FP --init" "	init repository" \
       "$0 $FP --commit" "	add all commit" \
       "$0 $FP --commitf" "	add file commit" \
@@ -41,7 +41,8 @@ CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
       "$0 $FP --dbranch" "	delete branch" \
       "$0 $FP --merge" "	merge branch" \
       "$0 $FP --status" "	repository status" \
-      "$0 $FP --commitlog" "	commit log")
+      "$0 $FP --commitlog" "	commit log" \
+      "$0 $FP --clone" "	clone git")
 exec $CMD
 }
 
@@ -62,6 +63,17 @@ while true; do
 			rm -f $OUTPUT
 			exec $0 $FP --	
 			;;
+		--clone) 
+		    if [[ $(xsel) == *github.com* ]]; then 
+		    GITURL=`xsel -b | sed -n 1p`
+		    GITNAME=`echo $GITURL | sed 's|.*\/\(.*\)|\1|' | tr -d '.git'`
+			(stdbuf -oL git clone $GITURL) | $ZENITY_RUN \
+			--title="Git clone: $GITNAME"  
+			$ZENITY_INFO --text="Successfully Git cloned: $GITNAME"	
+			else
+			$ZENITY_ERROR --text="Git link not copied"
+			fi
+			;;			
 		--status) 
 			git status &>> $OUTPUT | stdbuf -oL tee >$OUTPUT
 			if [ -s $OUTPUT ]; then 
