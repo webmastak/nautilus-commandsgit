@@ -7,7 +7,6 @@ Nautilus script, command set for Git
 
   * git
   * zenity
-  * nautilus
 
 ## Install
 
