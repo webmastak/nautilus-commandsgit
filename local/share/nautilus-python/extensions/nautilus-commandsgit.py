@@ -19,6 +19,9 @@ class Commands(GObject.GObject, Nautilus.MenuProvider):
         if len(files) != 1:
             return
 
+        if not 'home' in urllib.unquote(files[0].get_uri()[7:]):
+            return
+
         item = Nautilus.MenuItem(
             name="Commands::Git",
             label="Commands Git",
