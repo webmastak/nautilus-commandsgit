@@ -35,7 +35,7 @@ CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
       "$0 --checkout" "	checkout branch" \
       "$0 --newbranch" "	create new branch" \
       "$0 --cprbranch" "	copy remote branch" \
-      "$0 --dremote" "	delete remote origin" \
+      "$0 --drepo" "	delete repository" \
       "$0 --dbranch" "	delete branch" \
       "$0 --merge" "	merge branch" \
       "$0 --status" "	repository status" \
@@ -46,6 +46,13 @@ exec $CMD
 
 while true; do
 	case $1 in
+		--drepo)
+			CMD=$($ZENITY --hide-column=1 --title="Delete Repository" --text="Select:" \
+				  --column="Exec" --column="Command" --height=80 \
+				  "$0 --dlocale" "	     delete local" \
+				  "$0 --dremote" "	     delete remote")
+			exec $CMD
+			;;	
 		--dbranch)
 			CMD=$($ZENITY --hide-column=1 --title="Delete Branch" --text="Select:" \
 				  --column="Exec" --column="Command" --height=80 \
@@ -63,7 +70,7 @@ while true; do
 			else
 			$ZENITY_ERROR --text="Git link not copied"
 			fi
-			;;		
+			;;						
 		--init) 
 			git init && git add . && git commit -m "init" | tee >$OUTPUT
 			if [ -s $OUTPUT ]; then 
@@ -280,7 +287,16 @@ while true; do
 			else
 			$ZENITY_ERROR --text="No remote repository"
 			fi
-			;;				
+			;;
+		--dlocale)
+			if [[ -d .git ]]; then
+			if [ $? -eq 0 ]; then
+			rm -rf .git*         
+			fi
+			else
+			$ZENITY_ERROR --text="No locale repository"
+			fi
+			;;							
 		--)
 			shift
 			break
