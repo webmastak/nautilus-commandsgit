@@ -37,7 +37,7 @@ CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
       "$0 $FP --checkout" "	checkout branch" \
       "$0 $FP --newbranch" "	create new branch" \
       "$0 $FP --cprbranch" "	copy remote branch" \
-      "$0 $FP --dremote" "	delete remote origin" \
+      "$0 $FP --drepo" "	delete repository" \
       "$0 $FP --dbranch" "	delete branch" \
       "$0 $FP --merge" "	merge branch" \
       "$0 $FP --status" "	repository status" \
@@ -48,6 +48,13 @@ exec $CMD
 
 while true; do
 	case $2 in
+		--drepo)
+			CMD=$($ZENITY --hide-column=1 --title="Delete Repository" --text="Select:" \
+				  --column="Exec" --column="Command" --height=80 \
+				  "$0 $FP --dlocale" "	     delete local" \
+				  "$0 $FP --dremote" "	     delete remote")
+			exec $CMD
+			;;	
 		--dbranch)
 			CMD=$($ZENITY --hide-column=1 --title="Delete Branch" --text="Select:" \
 				  --column="Exec" --column="Command" --height=80 \
@@ -282,7 +289,16 @@ while true; do
 			else
 			$ZENITY_ERROR --text="No remote repository"
 			fi
-			;;				
+			;;	
+		--dlocale)
+			if [[ -d .git ]]; then
+			if [ $? -eq 0 ]; then
+			rm -rf .git*         
+			fi
+			else
+			$ZENITY_ERROR --text="No locale repository"
+			fi
+			;;						
 		--)
 			shift
 			break
