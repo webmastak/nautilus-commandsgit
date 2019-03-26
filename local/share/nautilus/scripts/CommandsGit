@@ -296,6 +296,7 @@ while true; do
 			else
 			$ZENITY_ERROR --text="No locale repository"
 			fi
+			exec $0 --
 			;;							
 		--)
 			shift
