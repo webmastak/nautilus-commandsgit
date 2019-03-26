@@ -71,7 +71,7 @@ while true; do
 			exec $0 $FP --	
 			;;
 		--clone) 
-		    if [[ $(xsel) == *github.com* ]]; then 
+		    if [[ $(xsel) == *.git* ]]; then 
 		    GITURL=`xsel -b | sed -n 1p`
 		    GITNAME=`echo $GITURL | sed 's|.*\/\(.*\)|\1|' | tr -d '.git'`
 			(stdbuf -oL git clone $GITURL) | $ZENITY_RUN \
