@@ -32,7 +32,7 @@ CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
       "$0 $FP --remote" "	add remote origin" \
       "$0 $FP --push" "	push origin" \
       "$0 $FP --pull" "	pull origin" \
-      "$0 $FP--pushf" "	push force origin" \
+      "$0 $FP --pushf" "	push force origin" \
       "$0 $FP --commitr" "	commit rollback" \
       "$0 $FP --checkout" "	checkout branch" \
       "$0 $FP --newbranch" "	create new branch" \
