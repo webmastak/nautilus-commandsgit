@@ -25,7 +25,7 @@ ONBRANCH=$(! [ -z $BRANCH ] && echo "On branch $BRANCH" || echo "No repository")
 main()
 {
 CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
-      --column="Exec" --column="Command" --height=522 \
+      --column="Exec" --column="Command" --height=558 \
       "$0 $FP --init" "	init repository" \
       "$0 $FP --commit" "	add all commit" \
       "$0 $FP --commitf" "	add file commit" \
@@ -50,14 +50,14 @@ while true; do
 	case $2 in
 		--drepo)
 			CMD=$($ZENITY --hide-column=1 --title="Delete Repository" --text="Select:" \
-				  --column="Exec" --column="Command" --height=80 \
+				  --column="Exec" --column="Command" --height=153 \
 				  "$0 $FP --dlocale" "	     delete local" \
 				  "$0 $FP --dremote" "	     delete remote")
 			exec $CMD
 			;;	
 		--dbranch)
 			CMD=$($ZENITY --hide-column=1 --title="Delete Branch" --text="Select:" \
-				  --column="Exec" --column="Command" --height=80 \
+				  --column="Exec" --column="Command" --height=153 \
 				  "$0 $FP --dlbranch" "	     delete local" \
 				  "$0 $FP --drbranch" "	     delete remote")
 			exec $CMD
@@ -128,18 +128,21 @@ while true; do
 			;;	
 		--commitf) 
 		    if [ -f $FILENAME ]; then
-			git add $FILENAME && git commit -m "Update $FILENAME" | tee >$OUTPUT
+		    COMMIT=$($ZENITY_ENTRY --title "Add File Commit" --text="Commit name:" --entry-text="Update $FILENAME") 
+		    if [ $? -eq 0 -a -n "$COMMIT" ]; then
+			git add $FILENAME && git commit -m "$COMMIT" | tee >$OUTPUT
 			if [ -s $OUTPUT ]; then 
 			$ZENITY_OUT --filename=$OUTPUT --title "Commit file: $FILENAME"
 			fi
 			rm -f $OUTPUT
+			fi
 			else
 			$ZENITY_ERROR --text="Select a single file and try again"
 			fi
 			;;			
 		--commit)
 			COMMIT=$($ZENITY_ENTRY --title "Add Commit" --text="Commit name:" --entry-text="Update") 
-			if [ $? -eq 0 -a -n $COMMIT ]; then
+			if [ $? -eq 0 -a -n "$COMMIT" ]; then
 			git add . && git commit -a -m "$COMMIT" | tee >$OUTPUT
 			if [ -s $OUTPUT ]; then 
 			$ZENITY_OUT --filename=$OUTPUT --title "All Commit"
