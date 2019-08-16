@@ -5,6 +5,7 @@ FP=$(echo $1)
 PROGNAME=${0##*/}
 FILENAME=$(basename $1)
 PROJECT=$(basename "${@%/*}")
+PID="/tmp/$(basename "$PROGNAME")"
 OUTPUT="/tmp/$(basename "$PROGNAME").$$"
 ICON="$HOME/.local/share/icons/git.png"
 NAME="--class=$PROGNAME --name=$PROGNAME"
@@ -20,10 +21,16 @@ ZENITY_INFO="zenity $NAME --info --no-wrap --window-icon=$ICON"
 ZENITY_ERROR="zenity $NAME --error --no-wrap --window-icon=$ICON"
 ZENITY_ENTRY="zenity $NAME --entry --window-icon=$ICON --width=230 --height=80"
 ZENITY_QUESTION="zenity $NAME --question --no-wrap --window-icon=$ICON --timeout=5" #--cancel-label=Cancel --ok-label=OK
-ONBRANCH=$(! [ -z $BRANCH ] && echo "On branch $BRANCH" || echo "No repository")
+ONBRANCH=$(! [ -z $BRANCH ] && echo "Branch $BRANCH" || echo "No repository")
 
 main()
 {
+PID_OLD=(`ps aux | grep -e 'zenity' | awk '{print $2}'`)
+echo $$ > $PID
+if [ $(cat $PID) != $PID_OLD ]; then
+   kill -9 $PID_OLD
+fi
+
 CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
       --column="Exec" --column="Command" --height=558 \
       "$0 $FP --init" "	init repository" \
@@ -44,6 +51,7 @@ CMD=$($ZENITY --hide-column=1 --title="Commands Git" --text="$ONBRANCH" \
       "$0 $FP --commitlog" "	commit log" \
       "$0 $FP --clone" "	clone git")
 exec $CMD
+rm $PID
 }
 
 while true; do
@@ -151,9 +159,13 @@ while true; do
 			fi
 			;;
 		--commitr)
-			NUMBER=$($ZENITY_ENTRY --title "Rollback Commits" --text="Number Commit:" --entry-text="1") 
+			NUMBER=$($ZENITY_ENTRY --title "Rollback Commits" --text="Number or Hesh Commit:" --entry-text="1") 
 			if [ $? -eq 0 -a -n $NUMBER ]; then
+			if [ "$NUMBER" -eq "$NUMBER" ] 2>/dev/null; then
 			git reset --hard HEAD~$NUMBER | tee >$OUTPUT
+			else
+			git reset --hard $NUMBER | tee >$OUTPUT
+			fi
 			if [ -s $OUTPUT ]; then 
 			$ZENITY_OUT --filename=$OUTPUT --title "Rollback Commits"
 			fi
